@@ -20,7 +20,8 @@ interface StudentDetails {
 
 const contractAddress = ContractAddress.NestedMapping;
 const contractABI = abi.abi;
-const HARDHAT_NETWORK_ID = "31337";
+// const HARDHAT_NETWORK_ID = "31337";
+const SEPOLIA_NETWORK_ID = "11155111";
 
 export default function Home() {
   const [state, setState] = useState<StateType>({
@@ -61,31 +62,38 @@ export default function Home() {
             window.location.reload();
           });
 
-          if (ethereum.networkVersion === HARDHAT_NETWORK_ID) {
-            const account = await ethereum.request({
-              method: "eth_requestAccounts",
-            });
-
-            const provider = new ethers.BrowserProvider(ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(
-              contractAddress,
-              contractABI,
-              signer
-            );
-
-            setUserAddress(account[0]);
-            setState({ provider, signer, contract });
-
-            // Check if user is owner
-            const owner = await contract._owner();
-            setIsOwner(account[0].toLowerCase() === owner.toLowerCase());
-
-            // Load initial contract data
-            await refreshContractData(contract);
-          } else {
+          const chainId = await ethereum.request({ method: "eth_chainId" });
+          if (chainId !== `0x${parseInt(SEPOLIA_NETWORK_ID).toString(16)}`) {
             setUserAddress("Other Network");
+            alert("Please switch to the Hardhat Network (Chain ID: 31337)");
+            return;
           }
+
+          const account = await ethereum.request({
+            method: "eth_requestAccounts",
+          });
+
+          const provider = new ethers.BrowserProvider(ethereum);
+          const signer = await provider.getSigner();
+          const contract = new ethers.Contract(
+            contractAddress,
+            contractABI,
+            signer
+          );
+          if (ethereum.networkVersion === SEPOLIA_NETWORK_ID) {
+            console.log("Connected to Hardhat network");
+          } else {
+            console.log("Wrong network. Expected:", SEPOLIA_NETWORK_ID);
+          }
+          setUserAddress(account[0]);
+          setState({ provider, signer, contract });
+          console.log(account);
+          // Check if user is owner
+          // const owner = await contract._owner();
+          setIsOwner(account[0]);
+
+          // Load initial contract data
+          await refreshContractData(contract);
         } else {
           alert("Please install metamask");
         }
@@ -132,7 +140,7 @@ export default function Home() {
   const insertStudentMarks = async () => {
     if (!userAddress) return alert("Please connect your wallet");
     if (userAddress === "Other Network")
-      return alert("Please Switch to Sepolia Network");
+      return alert("Please Switch to Hardhat Network");
 
     try {
       setLoading(true);
@@ -205,7 +213,7 @@ export default function Home() {
               <input
                 type="number"
                 placeholder="Student ID"
-                className="w-full p-2 border rounded font-b"
+                className="w-full text-black p-2 border rounded font-b"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
               />
@@ -238,9 +246,11 @@ export default function Home() {
           </div>
         )}
 
-        <div className="bg-gray-50 p-4 rounded mb-6">
-          <h2 className="text-lg font-bold mb-4">Insert Student Marks</h2>
-          <div className="space-y-4">
+        <div className="text-black bg-gray-50 p-4 rounded mb-6">
+          <h2 className="text-black text-lg font-bold mb-4">
+            Insert Student Marks
+          </h2>
+          <div className=" space-y-4">
             <input
               type="number"
               placeholder="Student ID"
@@ -276,7 +286,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded mb-6">
+        <div className="text-black bg-gray-50 p-4 rounded mb-6">
           <h2 className="text-lg font-bold mb-4">View Student Details</h2>
           <div className="space-y-4">
             <input
